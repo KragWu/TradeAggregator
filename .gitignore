@@ -222,3 +222,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Perso
+*/conftest.py
+test.json
+.vscode

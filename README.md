@@ -1,20 +1,103 @@
 # TradeAggregator
 
-TradeAggregator est un projet Python pour récupérer des informations financières depuis Boursorama et les écrire automatiquement dans une feuille Google Sheets.
+TradeAggregator est un projet Python pour récupérer automatiquement les 10 valeurs les plus lues du forum Boursorama, collecter leurs informations financières, et les enregistrer dans une feuille Google Sheets.
 
 ## Objectif
 
-- Récupérer des données de pages Boursorama.
-- Écrire les informations collectées dans une feuille Google Sheets.
-- Automatiser la saisie pour gagner du temps.
+- Récupérer les 10 actions les plus lues sur le forum Boursorama.
+- Extraire les données financières détaillées (cours, variation, valorisation, volume, etc.) depuis la page de chaque valeur.
+- Écrire automatiquement ces informations dans une feuille Google Sheets avec formatage approprié.
+- Éviter la saisie manuelle et chronophage dans Google Sheets.
+
+## Fonctionnalités
+
+- **Récupération automatique** : collecte les 10 valeurs les plus actives du forum Boursorama.
+- **Extraction de données enrichies** : ISIN, ticker, secteur, valorisation, volume, capital échangé, cours, variation.
+- **Formatage intelligent** :
+  - Les prix et volumes sont convertis au format numérique.
+  - La valorisation est supprimée de la devise (EUR) et convertie en nombre.
+  - Le capital échangé est converti en pourcentage (0-1).
+  - Les noms des valeurs incluent des hyperliens vers leurs pages Boursorama.
+- **Entête conditionnelle** : l'entête n'est écrite qu'une seule fois (pas de doublon).
+- **Exclusion paramétrable** : possibilité d'exclure certaines valeurs (ex: CAC 40, EURO STOXX 50).
 
 ## Structure du projet
 
-- `src/main.py` : script principal à lancer.
+- `src/main.py` : script principal orchestrant la collecte et l'écriture.
 - `src/trade_aggregator/boursorama.py` : récupération et parsing des pages Boursorama.
 - `src/trade_aggregator/google_sheets.py` : interaction avec Google Sheets.
+- `src/trade_aggregator/formatting.py` : formatage des données pour Google Sheets.
 - `requirements.txt` : dépendances Python.
 - `.env.example` : exemple de variables d'environnement.
+- `tests/` : suite de tests unitaires.
+
+## Pré-requis
+
+Pour exécuter ce projet, vous devez installer Python sur votre machine. Voici la procédure selon votre système d'exploitation et votre gestionnaire d'environnement.
+
+### Windows (via vfox)
+
+vfox (Version Fox) est un gestionnaire de versions multi-plateforme simple et moderne.
+
+Ouvrez votre terminal (PowerShell ou Invite de commandes en mode administrateur).
+
+Installez vfox (si ce n'est pas déjà fait) via l'outil Windows winget :
+```shell
+winget install version-fox.vfox
+```
+Note : Redémarrez votre terminal après l'installation pour appliquer les changements.
+
+Ajoutez le module Python à vfox :
+```shell
+vfox add python
+```
+
+Installez la version requise (par exemple la version 3.11) :
+```shell
+vfox install python@3.11
+```
+
+Activez-la globalement sur votre session :
+```shell
+vfox use -g python@3.11
+```
+
+### Linux (via SDKMAN!)
+
+SDKMAN! est un outil très populaire pour gérer les versions de vos outils de développement sous Linux.
+
+Ouvrez votre terminal et assurez-vous que SDKMAN est à jour.
+
+Installez Python en exécutant la commande suivante :
+```shell
+sdk install python 3.11.0-open
+```
+(Vous pouvez remplacer 3.11.0-open par la version exacte de votre choix).
+
+### macOS (via Homebrew)
+
+Homebrew est le gestionnaire de paquets incontournable sur Mac.
+
+Ouvrez le Terminal (via Spotlight : Cmd + Espace -> taper "Terminal").
+
+Installez Python à l'aide de la commande :
+```shell
+brew install python@3.11
+```
+
+Liez la version pour qu'elle devienne votre version par défaut :
+```shell
+brew link --overwrite python@3.11
+```
+
+### Étape finale : Verification de l'installation
+
+Peu importe votre système d'exploitation, ouvrez un nouveau terminal et tapez la commande suivante pour valider que tout fonctionne :
+
+```shell
+python --version
+(ou python3 --version sur Mac/Linux)
+```
 
 ## Installation
 
@@ -22,7 +105,7 @@ TradeAggregator est un projet Python pour récupérer des informations financiè
 
 ```bash
 python -m venv .venv
-source .venv/Scripts/activate  # sous Windows
+.venv\Scripts\activate
 ```
 
 2. Installez les dépendances :
@@ -31,43 +114,105 @@ source .venv/Scripts/activate  # sous Windows
 pip install -r requirements.txt
 ```
 
-3. Copiez `.env.example` vers `.env` et mettez à jour les valeurs :
+3. Copiez `.env.example` vers `.env` :
 
 ```bash
 copy .env.example .env
 ```
 
-4. Créez une clé de compte de service Google et téléchargez le fichier JSON. Placez-le à la racine du projet ou un autre dossier, puis mettez à jour `GOOGLE_SHEETS_CREDENTIALS`.
+4. Créez une clé de compte de service Google :
+   - Allez sur [Google Cloud Console](https://console.cloud.google.com/) et utilisez votre compte Google.
+   - Créez un projet, nommé TradeAggregator
+     * Cliquez en haut à gauche `le sélecteur de projets`
+     * Cliquez en haut à droite de la popin sur `Nouveau projet`
+   - Activez l'API Google Sheets.
+     * Cherchez dans la barre de recherche en haut `Google Sheets API`
+     * Cliquez sur le bouton `Activer`
+   - Activez l'API Google Drive.
+     * Cherchez dans la barre de recherche en haut `Google Drive API`
+     * Cliquez sur le bouton `Activer`
+   - Créez un compte de service.
+     * Cliquez dans le menu de navigation en haut à gauche (les 3 barres horizontales)
+     * Placez votre curseur de souris sur `IAM et administration`
+     * Après ouverture automatique du menu de navigation de cette rubrique, cliquez sur `Comptes de service`
+     * Cliquez sur `Créer un compte de service`
+     * Nommez le compte de service "scraper" ce qui doit donner l'adresse mail : scraper@trade-aggregator.iam.gserviceaccount.com
+     * Appuyer sur le bouton `OK`
+   - Créez une clé de compte de service et téléchargez le fichier JSON.
+     * Cliquez sur le compte de service `scraper` dans la liste
+     * Cliquez sur `Clés` dans le menu en haut (entre `Autorisation` et `Métriques`)
+     * Cliquez sur `Ajouter une clé`, puis `Créer une clé`
+     * Sélectionnez type de clé `JSON` et appuyez sur le bouton `Créer`
+     * Automatique le fichier sera dans votre répertoire `Téléchargements`
+   - Placez le fichier JSON à la racine du projet ou un autre chemin, puis mettez à jour `GOOGLE_SHEETS_CREDENTIALS` dans `.env` pour indiquer où se trouve le fichier. (Mettre tous le chemin, exemple : C:/Users/toto/Documents/secret/trade-aggregator-credentials.json)
 
-5. Partagez la feuille Google avec l'adresse email du compte de service (depuis le fichier JSON).
+5. Partagez votre feuille Google Sheets avec l'adresse email du compte de service (visible dans le fichier JSON).
+   - Dans votre fichier Google Sheets, cliquez sur le bouton `Partager` en haut à droite
+   - Ajoutez l'adresse mail du compte de service précédemment créé avec l'accès `Editeur`.
+   - **Décocher** `Envoyer une notification`
+   - Cliquez sur le bouton `Partager`
+
+## Configuration (.env)
+
+Remplissez les variables suivantes dans `.env` :
+
+```
+# Chemin vers le fichier JSON du compte de service Google
+GOOGLE_SHEETS_CREDENTIALS=credentials.json
+
+# ID de la feuille Google Sheets (visible dans l'URL : /d/{ID}/edit)
+GOOGLE_SHEET_ID=your_google_sheet_id_here
+
+# Nom de l'onglet (par défaut : "Feuille 1")
+GOOGLE_SHEET_WORKSHEET=
+
+# URL du forum Boursorama
+BOURSORAMA_FORUM_URL=https://www.boursorama.com/bourse/forum/
+
+# Valeurs à exclure (séparées par des virgules)
+# Exemple : CAC 40,EURO STOXX 50,S&P 500
+EXCLUDED_VALUES=
+```
 
 ## Utilisation
 
-1. Éditez `.env` pour renseigner :
-
-- `GOOGLE_SHEETS_CREDENTIALS`
-- `GOOGLE_SHEET_ID`
-- `GOOGLE_SHEET_WORKSHEET`
-- `BOURSORAMA_URLS`
-
-2. Lancez le script :
+Lancez le script :
 
 ```bash
 python src/main.py
 ```
 
-3. Vous pouvez aussi passer les paramètres en ligne de commande :
+### Flux d'exécution
+
+1. Récupère la page du forum Boursorama.
+2. Extrait les URLs des 10 valeurs les plus lues.
+3. Pour chaque valeur :
+   - Récupère la page de la valeur.
+   - Parse les données financières.
+   - Applique les filtres d'exclusion.
+4. Formate les données (valeurs numériques, pourcentages, hyperliens).
+5. Vérifie si la feuille Google Sheets a déjà l'entête.
+6. Ajoute l'entête si nécessaire.
+7. Ajoute les nouvelles lignes de données.
+
+## Format de la feuille Google Sheets
+
+Les colonnes écrites sont (dans l'ordre) :
+
+| Date | Valeur | ISIN | Ticker | Secteur | Valorisation | Volume | Capital échangé | Cours | Variation | Objectif % | Objectif € | Objectif Temps | Probabilité | Support € | Résistance € | Cours atteint | Tendance | % atteint | Différence | Trompé de sens |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Date & Heure | Lien Boursorama | Code ISIN | Code action | Secteur | Nombre | Nombre | Pourcentage (0-1) | Prix en €  | Pourcentage (0-1) | Pourcentage à définir | Prix à calculer automatiquement | Date à définir | Probabilité à définir (Faible, Moyen, Elevé) | Prix à définir | Prix à définir | prix à saisir à la cloture le lendemain | Tendance à calculer automatiquement | Poucentage à calculer automatiquement | Pourcentage à calculer automatiquement | A calculer automatiquement (OUI ou NON) |
+
+## Tests
+
+Lancez les tests unitaires :
 
 ```bash
-python src/main.py --sheet-id <ID> --credentials credentials.json --urls https://www.boursorama.com/cours/1rP
+python -m pytest tests/ -v
 ```
 
-## Personnalisation
+## Remarques de sécurité
 
-- `--worksheet-name` : nom de l'onglet dans la feuille.
-- `--urls` : liste d'URL Boursorama séparées par des espaces.
-
-## Remarques
-
-- Le projet utilise un compte de service Google pour écrire dans une feuille Sheets.
-- Ne commitez jamais vos identifiants Google ni votre fichier de compte de service.
+- ⚠️ **Ne commitez jamais** vos identifiants Google ni votre fichier de compte de service.
+- Le fichier `credentials.json` est inclus dans `.gitignore`.
+- Gardez vos variables d'environnement privées.
