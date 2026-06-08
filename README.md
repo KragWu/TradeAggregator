@@ -199,9 +199,9 @@ python src/main.py
 
 Les colonnes écrites sont (dans l'ordre) :
 
-| Date | Valeur | ISIN | Ticker | Secteur | Valorisation | Volume | Capital échangé | Cours | Variation | Objectif % | Objectif € | Objectif Temps | Probabilité | Support € | Résistance € | Cours atteint | Tendance | % atteint | Différence | Trompé de sens |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Date & Heure | Lien Boursorama | Code ISIN | Code action | Secteur | Nombre | Nombre | Pourcentage (0-1) | Prix en €  | Pourcentage (0-1) | Pourcentage à définir | Prix à calculer automatiquement | Date à définir | Probabilité à définir (Faible, Moyen, Elevé) | Prix à définir | Prix à définir | prix à saisir à la cloture le lendemain | Tendance à calculer automatiquement | Poucentage à calculer automatiquement | Pourcentage à calculer automatiquement | A calculer automatiquement (OUI ou NON) |
+| Date | Valeur | ISIN | Ticker | Secteur | Valorisation | Volume | Capital échangé | Cours | Variation | Objectif % | Objectif € | Objectif Temps | Probabilité | Risque | Support € | Distance Support | Résistance € | Distance Résistance | Cours atteint | Tendance | % atteint | Différence | Trompé de sens |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Date & Heure | Lien Boursorama | Code ISIN | Code action | Secteur | Nombre | Nombre | Pourcentage (0-1) | Prix en €  | Pourcentage (0-1) | Pourcentage à définir | Prix à calculer automatiquement | Date à définir | Probabilité à définir (Faible, Moyen, Elevé) | Coefficient | Prix à définir | Coefficient | Prix à définir | Coefficient | Prix à saisir à la cloture le lendemain | Tendance à calculer automatiquement | Poucentage à calculer automatiquement | Pourcentage à calculer automatiquement | A calculer automatiquement (OUI ou NON) |
 
 ## Tests
 

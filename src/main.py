@@ -21,8 +21,9 @@ from trade_aggregator.google_sheets import append_rows_to_sheet, get_google_shee
 HEADER = [
     "Date", "Valeur", "ISIN", "Ticker", "Secteur", "Valorisation", "Volume", 
     "Capital échangé", "Cours", "Variation", "Objectif %", "Objectif €", 
-    "Objectif Temps", "Probabilité", "Support €", "Résistance €", 
-    "Cours atteint", "Tendance", "% atteint", "Différence", "Trompé de sens"
+    "Objectif Temps", "Probabilité", "Risque", "Support €", "Distance Support", 
+    "Résistance €", "Distance Résistance", "Cours atteint", "Tendance", "% atteint", 
+    "Différence", "Trompé de sens"
 ]
 
 def build_data_rows(data_list: list[dict]) -> list[list]:
