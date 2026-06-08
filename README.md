@@ -166,12 +166,13 @@ GOOGLE_SHEET_ID=your_google_sheet_id_here
 # Nom de l'onglet (par défaut : "Feuille 1")
 GOOGLE_SHEET_WORKSHEET=
 
-# URL du forum Boursorama
-BOURSORAMA_FORUM_URL=https://www.boursorama.com/bourse/forum/
-
 # Valeurs à exclure (séparées par des virgules)
 # Exemple : CAC 40,EURO STOXX 50,S&P 500
 EXCLUDED_VALUES=
+
+# Valeurs supplémentaires à récupérer (séparées par des virgules)
+# Exemple : tracker-1rTDCAM,action-1rPTTE
+ADDED_VALUES=
 ```
 
 ## Utilisation
@@ -197,11 +198,45 @@ python src/main.py
 
 ## Format de la feuille Google Sheets
 
-Les colonnes écrites sont (dans l'ordre) :
+Lorsque la feuille est vide, le script ajoute automatiquement l'en-tête par défaut ci-dessous :
 
-| Date | Valeur | ISIN | Ticker | Secteur | Valorisation | Volume | Capital échangé | Cours | Variation | Objectif % | Objectif € | Objectif Temps | Probabilité | Risque | Support € | Distance Support | Résistance € | Distance Résistance | Cours atteint | Tendance | % atteint | Différence | Trompé de sens |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Date & Heure | Lien Boursorama | Code ISIN | Code action | Secteur | Nombre | Nombre | Pourcentage (0-1) | Prix en €  | Pourcentage (0-1) | Pourcentage à définir | Prix à calculer automatiquement | Date à définir | Probabilité à définir (Faible, Moyen, Elevé) | Coefficient | Prix à définir | Coefficient | Prix à définir | Coefficient | Prix à saisir à la cloture le lendemain | Tendance à calculer automatiquement | Poucentage à calculer automatiquement | Pourcentage à calculer automatiquement | A calculer automatiquement (OUI ou NON) |
+- Date
+- Valeur
+- ISIN
+- Ticker
+- Secteur
+- Valorisation
+- Volume
+- Capital échangé
+- Cours
+- Variation
+- Volume Moyen (Google Finance)
+- Momentum (Volume / Volume Moy)
+- Objectif %
+- Objectif €
+- Objectif Temps
+- Probabilité
+- Risque
+- Support €
+- Distance Support
+- Résistance €
+- Distance Résistance
+- MM20
+- Tendance MM20
+- MM50
+- Tendance MM50
+- MM200
+- Tendance MM200
+- Croisement Doré
+- Cours atteint
+- % atteint
+- Différence
+- Trompé de sens
+- Code Google Finance
+
+Le script écrit directement les colonnes suivantes : `Date`, `Valeur`, `ISIN`, `Ticker`, `Secteur`, `Valorisation`, `Volume`, `Capital échangé`, `Cours`, `Variation` et `Code Google Finance`.
+
+Si votre feuille Google Sheets contient déjà des colonnes supplémentaires, le script respecte l'ordre des en-têtes existants et ajoute des valeurs vides pour les colonnes qu'il ne gère pas.
 
 ## Tests
 
