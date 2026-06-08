@@ -18,46 +18,53 @@ from trade_aggregator.formatting import (
 )
 from trade_aggregator.google_sheets import append_rows_to_sheet, get_google_sheet
 
-HEADER = [
+# Cet en-tête sert UNIQUEMENT de modèle initial si la feuille Google Sheet est complètement vide.
+# Une fois la feuille créée, c'est l'ordre réel du Sheets qui fera foi.
+DEFAULT_HEADER = [
     "Date", "Valeur", "ISIN", "Ticker", "Secteur", "Valorisation", "Volume", 
-    "Capital échangé", "Cours", "Variation", "Objectif %", "Objectif €", 
+    "Capital échangé", "Cours", "Variation", "Volume Moyen (Google Finance)", 
+    "Momentum (Volume / Volume Moy)", "Objectif %", "Objectif €", 
     "Objectif Temps", "Probabilité", "Risque", "Support €", "Distance Support", 
-    "Résistance €", "Distance Résistance", "Cours atteint", "Tendance", "% atteint", 
-    "Différence", "Trompé de sens"
+    "Résistance €", "Distance Résistance", "MM20", "Tendance MM20", 
+    "MM50", "Tendance MM50", "MM200", "Tendance MM200", "Croisement Doré",
+    "Cours atteint", "% atteint", "Différence", "Trompé de sens", "Code Google Finance"
 ]
 
-def build_data_rows(data_list: list[dict]) -> list[list]:
-    """Construit uniquement les lignes de données (sans entête) avec formatting."""
-    rows = []
-    for data in data_list:
-        rows.append([
-            datetime.now().isoformat(timespec="seconds"),  # Date
-            format_name_with_hyperlink(data.get("name"), data.get("source_url")),  # Valeur
-            data.get("isin", ""),
-            data.get("ticker", ""),
-            data.get("sector", ""),
-            parse_numeric(data.get("valuation")),
-            parse_numeric(data.get("volume")),
-            format_percentage(data.get("capital_exchanged")),
-            parse_numeric(data.get("price")),
-            format_percentage(data.get("variation")),
-        ])
-    return rows
 
+def build_dynamic_row(data: dict, sheet_headers: list[str]) -> list:
+    """Construit une ligne de données alignée dynamiquement sur l'ordre actuel des colonnes du Sheets."""
+    ticker = data.get("ticker", "")
+    gf_code = f"EPA:{ticker}" if ticker else ""
 
-def sheet_has_header(sheet) -> bool:
-    """Vérifie si la feuille a déjà l'entête."""
-    try:
-        return sheet.row_values(1) == HEADER
-    except Exception:
-        return False
+    # Association stricte entre le nom exact de la colonne (clé) et la valeur calculée (valeur)
+    field_mapping = {
+        "Date": datetime.now().isoformat(timespec="seconds"),
+        "Valeur": format_name_with_hyperlink(data.get("name"), data.get("source_url")),
+        "ISIN": data.get("isin", ""),
+        "Ticker": ticker,
+        "Secteur": data.get("sector", ""),
+        "Valorisation": parse_numeric(data.get("valuation")),
+        "Volume": parse_numeric(data.get("volume")),
+        "Capital échangé": format_percentage(data.get("capital_exchanged")),
+        "Cours": parse_numeric(data.get("price")),
+        "Variation": format_percentage(data.get("variation")),
+        "Code Google Finance": gf_code,
+    }
+
+    # Reconstruction de la ligne en suivant l'ordre exact dicté par les en-têtes du Sheets.
+    # Si une colonne du Sheets (ex: une formule ou un objectif) n'est pas gérée par Python,
+    # on injecte une chaîne vide "" pour ne pas décaler le reste de la ligne.
+    row = []
+    for header in sheet_headers:
+        row.append(field_mapping.get(header, ""))
+        
+    return row
 
 
 def fetch_and_filter_stock(url: str, excluded_values: list[str]) -> dict | None:
     """Centralise la récupération et le filtrage pour éviter la duplication."""
     try:
         data = fetch_boursorama_stock(url)
-        # Gestion native si l'API/Scraper renvoie un dictionnaire incomplet ou vide
         if not data or not data.get("name"):
             return None
     except Exception as exc:
@@ -74,14 +81,14 @@ def fetch_and_filter_stock(url: str, excluded_values: list[str]) -> dict | None:
 def main() -> int:
     load_dotenv()
     
-    # 1. Validation immédiate (Fail Fast)
+    # 1. Validation Fail-Fast
     sheet_id = os.getenv("GOOGLE_SHEET_ID")
     credentials_path = os.getenv("GOOGLE_SHEETS_CREDENTIALS")
     if not sheet_id or not credentials_path:
         raise ValueError("GOOGLE_SHEET_ID et GOOGLE_SHEETS_CREDENTIALS doivent être renseignés dans .env")
 
     worksheet_name = os.getenv("GOOGLE_SHEET_WORKSHEET", "Feuille 1")
-    forum_base_url = os.getenv("BOURSORAMA_FORUM_URL", "https://www.boursorama.com/bourse/forum/")
+    forum_base_url = "https://www.boursorama.com/bourse/forum/"
     
     excluded_values = [v.strip() for v in os.getenv("EXCLUDED_VALUES", "").split(",") if v.strip()]
     added_values = [v.strip() for v in os.getenv("ADDED_VALUES", "").split(",") if v.strip()]
@@ -124,21 +131,33 @@ def main() -> int:
             if res:
                 data_list.append(res)
 
-    # 4. Export vers Google Sheets
     if not data_list:
         print("Aucune donnée à ajouter (toutes les valeurs ont été exclues ou échecs techniques).")
         return 0
 
+    # 4. Connexion et Alignement Dynamique Google Sheets
     print("Connexion à Google Sheets...")
     sheet = get_google_sheet(sheet_id, worksheet_name, credentials_path)
     
-    if not sheet_has_header(sheet):
-        print("Ajout de l'entête...")
-        sheet.append_rows([HEADER], value_input_option="RAW")
+    # Lecture en temps réel de la première ligne du Google Sheet
+    try:
+        current_headers = sheet.row_values(1)
+    except Exception as e:
+        print(f"Impossible de lire l'en-tête, tentative de réinitialisation : {e}")
+        current_headers = []
     
-    data_rows = build_data_rows(data_list)
+    # Si le fichier est totalement neuf/vide, on applique l'en-tête par défaut
+    if not current_headers:
+        print("La feuille est vide. Ajout de l'entête par défaut...")
+        sheet.append_rows([DEFAULT_HEADER], value_input_option="RAW")
+        current_headers = DEFAULT_HEADER
+
+    print("Génération et alignement des lignes de données...")
+    data_rows = [build_dynamic_row(data, current_headers) for data in data_list]
+    
+    # Envoi groupé en une seule requête API
     append_rows_to_sheet(sheet, data_rows)
-    print(f"{len(data_rows)} ligne(s) ajoutée(s) à la feuille '{worksheet_name}'.")
+    print(f"{len(data_rows)} ligne(s) ajoutée(s) avec succès dans '{worksheet_name}'.")
     
     return 0
 
