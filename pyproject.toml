@@ -1,6 +1,6 @@
 [project]
 name = "tradeaggregator"
-version = "1.0.0"
+version = "1.0.1"
 description = "Récupère des données de Boursorama et les écrit dans une feuille Google Sheets."
 readme = "README.md"
 requires-python = ">=3.11"
