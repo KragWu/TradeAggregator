@@ -24,7 +24,7 @@ DEFAULT_HEADER = [
     "Date", "Valeur", "ISIN", "Ticker", "Secteur", "Valorisation", "Volume", 
     "Capital échangé", "Cours", "Variation", "Volume Moyen (Google Finance)", 
     "Momentum (Volume / Volume Moy)", "Objectif %", "Objectif €", 
-    "Objectif Temps", "Probabilité", "Risque", "Support €", "Distance Support", 
+    "Objectif Temps", "Risque", "Support €", "Distance Support", 
     "Résistance €", "Distance Résistance", "MM20", "Tendance MM20", 
     "MM50", "Tendance MM50", "MM200", "Tendance MM200", "Croisement Doré",
     "Cours atteint", "% atteint", "Différence", "Trompé de sens", "Code Google Finance"
@@ -36,9 +36,11 @@ def build_dynamic_row(data: dict, sheet_headers: list[str]) -> list:
     ticker = data.get("ticker", "")
     gf_code = f"EPA:{ticker}" if ticker else ""
 
+    date_now = datetime.now()
+
     # Association stricte entre le nom exact de la colonne (clé) et la valeur calculée (valeur)
     field_mapping = {
-        "Date": datetime.now().isoformat(timespec="seconds"),
+        "Date": date_now.isoformat(timespec="seconds"),
         "Valeur": format_name_with_hyperlink(data.get("name"), data.get("source_url")),
         "ISIN": data.get("isin", ""),
         "Ticker": ticker,
@@ -48,6 +50,10 @@ def build_dynamic_row(data: dict, sheet_headers: list[str]) -> list:
         "Capital échangé": format_percentage(data.get("capital_exchanged")),
         "Cours": parse_numeric(data.get("price")),
         "Variation": format_percentage(data.get("variation")),
+        "Volume Moyen (Google Finance)": f"=GOOGLEFINANCE(\"{gf_code}\";\"volumeavg\")",
+        "MM20": f"=MOYENNE(INDEX(GOOGLEFINANCE(\"{gf_code}\"; \"price\"; DATE({date_now.year};{date_now.month};{date_now.day})-30; DATE({date_now.year};{date_now.month};{date_now.day})); ; 2))",
+        "MM50": f"=MOYENNE(INDEX(GOOGLEFINANCE(\"{gf_code}\"; \"price\"; DATE({date_now.year};{date_now.month};{date_now.day})-80; DATE({date_now.year};{date_now.month};{date_now.day})); ; 2))",
+        "MM200": f"=MOYENNE(INDEX(GOOGLEFINANCE(\"{gf_code}\"; \"price\"; DATE({date_now.year};{date_now.month};{date_now.day})-290; DATE({date_now.year};{date_now.month};{date_now.day})); ; 2))",
         "Code Google Finance": gf_code,
     }
 

@@ -96,6 +96,21 @@ def test_parse_boursorama_stock_malformed_isin():
     assert data["isin"] == "FR123_SEUL"
     assert data["ticker"] is None  # Pas de crash grâce au découpage sécurisé
 
+def test_parse_boursorama_stock_malformed_isin_but_code_in_url():
+    # Cas où le Ticker n'est pas fourni dans la classe ISIN mais dans l'url
+    html_bad_isin = """
+    <html>
+        <div class="c-faceplate__isin">FR123_SEUL</div>
+    </html>
+    """
+    data = parse_boursorama_stock(html_bad_isin, "https://test-url.com/1rPSEUL/")
+    assert data["isin"] == "FR123_SEUL"
+    assert data["ticker"] == "SEUL"
+
+    data = parse_boursorama_stock(html_bad_isin, "https://test-url.com/1rTSEUL/")
+    assert data["isin"] == "FR123_SEUL"
+    assert data["ticker"] == "SEUL"
+
 
 def test_parse_forum_top_stocks(html_forum_page):
     urls = parse_forum_top_stocks(html_forum_page, base_url="https://www.boursorama.com")
