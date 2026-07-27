@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import requests
+import re
 from bs4 import BeautifulSoup
 from typing import Dict, Optional, List
 
@@ -56,6 +57,10 @@ def parse_boursorama_stock(html: str, url: str) -> dict[str, str | None]:
             data["isin"] = parts[0]
         if len(parts) >= 2:
             data["ticker"] = parts[1]
+        # Gestion des ETF
+        if data["ticker"] is None or data["ticker"] == "-":
+            match = re.search(r"/1r[TP]([A-Z0-9]+)/", url)
+            data["ticker"] = match.group(1) if match else None
 
     # 5. Secteur d'activité
     for item in soup.select(".c-list-info__item"):
